@@ -6,7 +6,7 @@ import 'disk_space_2_platform_interface.dart';
 
 /// `DiskSpace` is a class that provides methods to get information about the device's disk space.
 class DiskSpace {
-  static const MethodChannel _channel = MethodChannel('disk_space');
+  static const MethodChannel _channel = MethodChannel('disk_space_2');
 
   Future<String?> getPlatformVersion() {
     return DiskSpace_2Platform.instance.getPlatformVersion();

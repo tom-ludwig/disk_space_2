@@ -17,7 +17,11 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
-  final _diskSpace_2Plugin = DiskSpace();
+  double _totalDiskSpace = 0.0;
+  double _freeDiskSpace = 0.0;
+  // double _freeDiskSpaceForPath = 0.0;
+
+  final _diskSpacePlugin = DiskSpace();
 
   @override
   void initState() {
@@ -28,21 +32,27 @@ class _MyAppState extends State<MyApp> {
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
     String platformVersion;
+    double totalDiskSpace;
+    double freeDiskSpace;
+    // double freeDiskSpaceForPath;
+
     // Platform messages may fail, so we use a try/catch PlatformException.
     // We also handle the message potentially returning null.
     try {
-      platformVersion = await _diskSpace_2Plugin.getPlatformVersion() ?? 'Unknown platform version';
+      platformVersion = await _diskSpacePlugin.getPlatformVersion() ?? 'Unknown platform version';
     } on PlatformException {
       platformVersion = 'Failed to get platform version.';
     }
 
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
+    totalDiskSpace = await DiskSpace.getTotalDiskSpace ?? 0.0;
+    freeDiskSpace = await DiskSpace.getFreeDiskSpace ?? 0.0;
+
     if (!mounted) return;
 
     setState(() {
       _platformVersion = platformVersion;
+      _totalDiskSpace = totalDiskSpace;
+      _freeDiskSpace = freeDiskSpace;
     });
   }
 
@@ -54,7 +64,14 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: Text('Running on: $_platformVersion\n'),
+          child: Column(
+            children: [
+              Text('Running on: $_platformVersion'),
+              Text('Total disk space: $_totalDiskSpace mb'),
+              Text('Free disk space: $_freeDiskSpace mb'),
+              Text('Free disk space: ${_freeDiskSpace / 1000} GB'),
+            ],
+          ),
         ),
       ),
     );

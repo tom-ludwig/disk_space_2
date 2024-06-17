@@ -15,7 +15,7 @@ class DiskSpace_2Plugin : FlutterPlugin, MethodCallHandler {
   private lateinit var channel: MethodChannel
 
   override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
-    channel = MethodChannel(flutterPluginBinding.binaryMessenger, "disk_space")
+    channel = MethodChannel(flutterPluginBinding.binaryMessenger, "disk_space_2")
     channel.setMethodCallHandler(this)
   }
 

@@ -3,8 +3,8 @@ import UIKit
 
 public class DiskSpace_2Plugin: NSObject, FlutterPlugin {
    public static func register(with registrar: FlutterPluginRegistrar) {
-    let channel = FlutterMethodChannel(name: "disk_space", binaryMessenger: registrar.messenger())
-    let instance = DiskSpacePlugin()
+    let channel = FlutterMethodChannel(name: "disk_space_2", binaryMessenger: registrar.messenger())
+    let instance = DiskSpace_2Plugin()
     registrar.addMethodCallDelegate(instance, channel: channel)
   }
 
