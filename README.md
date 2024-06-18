@@ -13,7 +13,7 @@ This package allows you to get the following information about the device's disk
 
 ## Usage
 ```dart
-import 'package:disk_space/disk_space.dart';
+import 'package:disk_space_2/disk_space_2.dart';
 
 void main() async {
   double? freeDiskSpace = await DiskSpace.getFreeDiskSpace;

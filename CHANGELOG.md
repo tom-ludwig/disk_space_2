@@ -1,3 +1,7 @@
+## 1.0.8
+
+* Fixed android package.
+
 ## 1.0.7
 
 * Fixed android package.
