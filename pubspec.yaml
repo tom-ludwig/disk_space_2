@@ -1,6 +1,6 @@
 name: disk_space_2
 description: "A Flutter package that provides an easy way to get disk space information on Android and iOS devices."
-version: 1.0.6
+version: 1.0.7
 homepage: https://activecoding.de.cool/
 repository: https://github.com/activcoding/disk_space_2
 

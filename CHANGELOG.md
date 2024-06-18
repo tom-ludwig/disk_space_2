@@ -1,3 +1,7 @@
+## 1.0.7
+
+* Fixed android package.
+
 ## 1.0.6
 
 * TODO: Describe initial release.
