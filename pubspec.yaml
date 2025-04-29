@@ -1,6 +1,6 @@
 name: disk_space_2
 description: "A Flutter package that provides an easy way to get disk space information on Android and iOS devices."
-version: 1.0.8
+version: 1.0.9
 homepage: https://activecoding.de.cool/
 repository: https://github.com/activcoding/disk_space_2
 
@@ -39,6 +39,10 @@ flutter:
         package: com.example.disk_space_2
         pluginClass: DiskSpace_2Plugin
       ios:
+        pluginClass: DiskSpace_2Plugin
+      linux:
+        pluginClass: DiskSpace_2Plugin
+      windows:
         pluginClass: DiskSpace_2Plugin
 
   # To add assets to your plugin package, add an assets section, like this:

@@ -12,7 +12,7 @@ class DiskSpace {
     return DiskSpace_2Platform.instance.getPlatformVersion();
   }
 
-  /// Returns the amount of free disk space on the device.
+  /// Returns the amount of free disk space on the device measured in mebibytes (2^20 bytes).
   ///
   /// This is a static method and can be called directly on the `DiskSpace` class.
   static Future<double?> get getFreeDiskSpace async {
@@ -20,7 +20,7 @@ class DiskSpace {
     return freeDiskSpace;
   }
 
-  /// Returns the total amount of disk space on the device.
+  /// Returns the total amount of disk space on the device measured in mebibytes (2^20 bytes).
   ///
   /// This is a static method and can be called directly on the `DiskSpace` class.
   static Future<double?> get getTotalDiskSpace async {
@@ -28,7 +28,7 @@ class DiskSpace {
     return totalDiskSpace;
   }
 
-  /// Returns the amount of free disk space for a specific path.
+  /// Returns the amount of free disk space for a specific path measured in mebibytes (2^20 bytes).
   ///
   /// This is a static method and can be called directly on the `DiskSpace` class.
   ///
