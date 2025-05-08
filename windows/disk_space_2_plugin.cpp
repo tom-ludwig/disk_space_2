@@ -16,6 +16,7 @@
 #include <codecvt>
 #include <memory>
 #include <sstream>
+#include <string>
 
 namespace disk_space_2 {
 
@@ -23,6 +24,47 @@ constexpr char kBadArgumentsError[] = "Bad Arguments";
 constexpr char kNoMemory[] = "Out of memory";
 constexpr char PATH_KEY[] = "path";
 constexpr double ONE_MEGABYTE = 1024 * 1024;
+
+// Helper function to get detailed Windows error message
+std::string GetLastErrorAsString() {
+    DWORD error = GetLastError();
+    if (error == 0) {
+        return std::string();
+    }
+
+    LPSTR messageBuffer = nullptr;
+    size_t size = FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        error,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPSTR)&messageBuffer,
+        0,
+        NULL
+    );
+
+    std::string message(messageBuffer, size);
+    LocalFree(messageBuffer);
+    return message;
+}
+
+// Helper function to validate path
+bool IsValidPath(const std::wstring& path) {
+    if (path.empty()) return false;
+    
+    // Check if path exists and is accessible
+    DWORD attributes = GetFileAttributesW(path.c_str());
+    if (attributes == INVALID_FILE_ATTRIBUTES) {
+        return false;
+    }
+    
+    // Check if it's a directory
+    if (!(attributes & FILE_ATTRIBUTE_DIRECTORY)) {
+        return false;
+    }
+    
+    return true;
+}
 
 enum class WhichMethod {
   UNKNOWN,
@@ -84,23 +126,26 @@ void DiskSpace_2Plugin::HandleMethodCall(
         result->Error(kBadArgumentsError, "Expected 'path' argument");
         return;
       }
-      // key and value should be an EncodableValue
       if (!(std::holds_alternative<std::string>(path_it->second))) {
         result->Error(kBadArgumentsError, "Expected string in Map entry");
         return;
       }
       auto path = std::get<std::string>(path_it->second);
       std::wstring pathStr = std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t>{}.from_bytes(path);
+      
+      // Validate path
+      if (!IsValidPath(pathStr)) {
+        result->Error("InvalidPath", "The provided path is invalid or inaccessible");
+        return;
+      }
+
       // Retrieve free disk space
       ULARGE_INTEGER lFreeBytesAvailableToCaller;
       ULARGE_INTEGER lTotalNumberOfBytes;
       ULARGE_INTEGER lTotalNumberOfFreeBytes;
       if (!GetDiskFreeSpaceEx(pathStr.c_str(), &lFreeBytesAvailableToCaller, &lTotalNumberOfBytes, &lTotalNumberOfFreeBytes)) {
-        // Failed
-        DWORD error = GetLastError();
-        std::ostringstream err_stream;
-        err_stream << "Win32 error " << error;
-        result->Error("Error", err_stream.str());
+        std::string errorMsg = GetLastErrorAsString();
+        result->Error("DiskSpaceError", "Failed to get disk space information: " + errorMsg);
         return;
       }
       if (whichMethod == WhichMethod::FREE_SPACE_PATH)
@@ -114,29 +159,34 @@ void DiskSpace_2Plugin::HandleMethodCall(
       // Unlike Apple or Android phones, Windows does not have a single "disk" that we can
       // query the properties of. Assume the user wants the properties of the partition
       // their user profile is stored on; retrieve the Desktop folder's location
-      HRESULT hr;
-      PWSTR folderPath = NULL; // << ensure this is always freed w/ CoTaskMemFree
-      hr = SHGetKnownFolderPath(FOLDERID_Desktop, KF_FLAG_DEFAULT, nullptr, &folderPath);
+      PWSTR folderPath = NULL;
+      HRESULT hr = SHGetKnownFolderPath(FOLDERID_Desktop, KF_FLAG_DEFAULT, nullptr, &folderPath);
       if (S_OK != hr) {
-        // Failed
-        result->Error("Error", "Failed to get Desktop folder location");
+        std::string errorMsg = GetLastErrorAsString();
+        result->Error("FolderError", "Failed to get Desktop folder location: " + errorMsg);
         CoTaskMemFree(folderPath);
         return;
       }
+
+      // Validate path
+      if (!IsValidPath(folderPath)) {
+        result->Error("InvalidPath", "The Desktop folder path is invalid or inaccessible");
+        CoTaskMemFree(folderPath);
+        return;
+      }
+
       // Retrieve free disk space
       ULARGE_INTEGER lFreeBytesAvailableToCaller;
       ULARGE_INTEGER lTotalNumberOfBytes;
       ULARGE_INTEGER lTotalNumberOfFreeBytes;
       if (!GetDiskFreeSpaceEx(folderPath, &lFreeBytesAvailableToCaller, &lTotalNumberOfBytes, &lTotalNumberOfFreeBytes)) {
-        // Failed
-        DWORD error = GetLastError();
-        std::ostringstream err_stream;
-        err_stream << "Win32 error " << error;
-        result->Error("Error", err_stream.str());
+        std::string errorMsg = GetLastErrorAsString();
+        result->Error("DiskSpaceError", "Failed to get disk space information: " + errorMsg);
         CoTaskMemFree(folderPath);
         return;
       }
       CoTaskMemFree(folderPath);
+
       if (whichMethod == WhichMethod::FREE_SPACE)
         result->Success(flutter::EncodableValue(static_cast<double>(lFreeBytesAvailableToCaller.QuadPart) / ONE_MEGABYTE));
       else

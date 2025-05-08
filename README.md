@@ -1,5 +1,5 @@
 # disk_space_2
-A Flutter package that provides an easy way to get disk space information on Android and iOS devices.
+A Flutter package that provides an easy way to get disk space information on Android, iOS, Windows and Linux devices.
 
 > [!NOTE]  
 > This is a fork of the disk_space package from Marvin Böddeker. Since it was not maintained, we decided to fork it and maintain it ourself. We will be adding new features and fixing bugs as needed.
@@ -34,7 +34,8 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 <table>
   <tbody>
     <tr>
-      <td><a href="https://github.com/activcoding"><img src="https://avatars.githubusercontent.com/activcoding?v=4?s=100" width="100px" alt="Tom Ludwig" style="border-radius: 15%;"><br /><sub><b>Tom Ludwig</b></sub></a><br/></td>
+      <td><a href="https://github.com/tom-ludwig"><img src="https://avatars.githubusercontent.com/tom-ludwig?v=4?s=100" width="100px" alt="Tom Ludwig" style="border-radius: 15%;"><br /><sub><b>Tom Ludwig</b></sub></a><br/></td>
+      <td><a href="https://github.com/pinterlajos"><img src="https://avatars.githubusercontent.com/pinterlajos?v=4?s=100" width="100px" alt="lala" style="border-radius: 15%;"><br /><sub><b>lala</b></sub></a><br/></td>
     </tr>
   </tbody>
 </table>

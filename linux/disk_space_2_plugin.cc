@@ -8,6 +8,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <errno.h>
+#include <string.h>
 
 #include <cstring>
 
@@ -23,8 +25,10 @@ G_DEFINE_TYPE(DiskSpace_2Plugin, disk_space_2_plugin, g_object_get_type())
 
 constexpr char kBadArgumentsError[] = "Bad Arguments";
 constexpr char kNoMemory[] = "Out of memory";
+constexpr char kIOError[] = "IO Error";
 constexpr char PATH_KEY[] = "path";
 constexpr double ONE_MEGABYTE = 1024 * 1024;
+constexpr size_t MAX_PATH_LENGTH = 4096;
 
 enum class WhichMethod {
   UNKNOWN,
@@ -35,11 +39,28 @@ enum class WhichMethod {
   PLATFORM_VER,
 };
 
+// Helper function to get disk space information
+static bool get_disk_space(const char* path, struct statvfs* fs_info, GError** error) {
+  if (strlen(path) > MAX_PATH_LENGTH) {
+    g_set_error(error, G_FILE_ERROR, G_FILE_ERROR_INVAL,
+                "Path length exceeds maximum allowed length");
+    return false;
+  }
+
+  if (statvfs(path, fs_info) != 0) {
+    g_set_error(error, G_FILE_ERROR, g_file_error_from_errno(errno),
+                "Failed to get disk space info: %s", strerror(errno));
+    return false;
+  }
+  return true;
+}
+
 // Called when a method call is received from Flutter.
 static void disk_space_2_plugin_handle_method_call(
     DiskSpace_2Plugin* self,
     FlMethodCall* method_call) {
   g_autoptr(FlMethodResponse) response = nullptr;
+  GError* error = nullptr;
 
   const gchar* method = fl_method_call_get_name(method_call);
   FlValue* args = fl_method_call_get_args(method_call);
@@ -65,76 +86,74 @@ static void disk_space_2_plugin_handle_method_call(
             kBadArgumentsError, "Expected Map", nullptr));
         break;
       }
-      // (cannot take ownership of the returned value here with g_autoptr)
       FlValue* pathValue = fl_value_lookup_string(args, PATH_KEY);
       if ((pathValue == nullptr) || (fl_value_get_type(pathValue) != FL_VALUE_TYPE_STRING)) {
         response = FL_METHOD_RESPONSE(fl_method_error_response_new(
             kBadArgumentsError, "Expected string in Map entry", nullptr));
         break;
       }
-      // Path is UTF-8 already
       const gchar* path = fl_value_get_string(pathValue);
-      // Retrieve free disk space
-      struct statvfs fsInfo = {};
-      if (0 != statvfs(path, &fsInfo)) {
-        // Failed.
+      struct statvfs fs_info;
+      if (!get_disk_space(path, &fs_info, &error)) {
         response = FL_METHOD_RESPONSE(fl_method_error_response_new(
-            kBadArgumentsError, "IO error (path doesn\'t exist?)", nullptr));
+            kIOError, error->message, nullptr));
+        g_error_free(error);
         break;
       }
-      double space;
-      if (whichMethod == WhichMethod::FREE_SPACE_PATH)
-        space = fsInfo.f_bsize * fsInfo.f_bavail / ONE_MEGABYTE;
-      else
-        space = fsInfo.f_frsize * fsInfo.f_blocks / ONE_MEGABYTE;
+
+      double space = whichMethod == WhichMethod::FREE_SPACE_PATH ?
+          (fs_info.f_bsize * fs_info.f_bavail / ONE_MEGABYTE) :
+          (fs_info.f_frsize * fs_info.f_blocks / ONE_MEGABYTE);
+      
       g_autoptr(FlValue) result = fl_value_new_float(space);
       response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));
       break;
     }
     case WhichMethod::FREE_SPACE:
     case WhichMethod::TOTAL_SPACE: {
-      // Retrieve free disk space for the home directory
+      struct passwd pwd = {};
+      struct passwd* pwdResult = nullptr;
       size_t pathBufferSize = sysconf(_SC_GETPW_R_SIZE_MAX);
       if (pathBufferSize == static_cast<size_t>(-1))
         pathBufferSize = 16384;
-      char* pathBuffer = reinterpret_cast<char*>(malloc(pathBufferSize));
+      
+      g_autofree char* pathBuffer = static_cast<char*>(g_malloc(pathBufferSize));
       if (pathBuffer == nullptr) {
         response = FL_METHOD_RESPONSE(fl_method_error_response_new(
             kNoMemory, "Out of memory querying pwd entry size", nullptr));
         break;
       }
-      struct passwd pwd = {};
-      struct passwd* pwdResult;
-      if (0 != getpwuid_r(getuid(), &pwd, pathBuffer, pathBufferSize, &pwdResult)) {
+
+      if (getpwuid_r(getuid(), &pwd, pathBuffer, pathBufferSize, &pwdResult) != 0) {
         response = FL_METHOD_RESPONSE(fl_method_error_response_new(
             kNoMemory, "Failed to get pwd entry", nullptr));
-        free(pathBuffer);
         break;
       }
-      const char* path = pwd.pw_dir;
-      // Retrieve free disk space
-      struct statvfs fsInfo = {};
-      if (0 != statvfs(path, &fsInfo)) {
-        // Failed.
+
+      struct statvfs fs_info;
+      if (!get_disk_space(pwd.pw_dir, &fs_info, &error)) {
         response = FL_METHOD_RESPONSE(fl_method_error_response_new(
-            kBadArgumentsError, "IO error (path doesn\'t exist?)", nullptr));
-        free(pathBuffer);
+            kIOError, error->message, nullptr));
+        g_error_free(error);
         break;
       }
-      free(pathBuffer);
-      double space;
-      if (whichMethod == WhichMethod::FREE_SPACE)
-        space = fsInfo.f_bsize * fsInfo.f_bavail / ONE_MEGABYTE;
-      else
-        space = fsInfo.f_frsize * fsInfo.f_blocks / ONE_MEGABYTE;
-      g_autoptr(FlValue) result; result = fl_value_new_float(space);
+
+      double space = whichMethod == WhichMethod::FREE_SPACE ?
+          (fs_info.f_bsize * fs_info.f_bavail / ONE_MEGABYTE) :
+          (fs_info.f_frsize * fs_info.f_blocks / ONE_MEGABYTE);
+      
+      g_autoptr(FlValue) result = fl_value_new_float(space);
       response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));
       break;
     }
     case WhichMethod::PLATFORM_VER: {
       struct utsname uname_data = {};
-      uname(&uname_data);
-      g_autofree gchar *version = g_strdup_printf("Linux %s", uname_data.version);
+      if (uname(&uname_data) != 0) {
+        response = FL_METHOD_RESPONSE(fl_method_error_response_new(
+            kIOError, "Failed to get system information", nullptr));
+        break;
+      }
+      g_autofree gchar* version = g_strdup_printf("Linux %s", uname_data.version);
       g_autoptr(FlValue) result = fl_value_new_string(version);
       response = FL_METHOD_RESPONSE(fl_method_success_response_new(result));
       break;
