@@ -1,3 +1,8 @@
+## 1.0.9
+
+* Add support for linux and windows.
+* Small code improvements
+
 ## 1.0.8
 
 * Fixed android package.
