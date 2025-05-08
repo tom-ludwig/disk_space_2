@@ -169,7 +169,8 @@ void DiskSpace_2Plugin::HandleMethodCall(
       }
 
       // Validate path
-      if (!IsValidPath(folderPath)) {
+      std::wstring folderPathWstr(folderPath);
+      if (!IsValidPath(folderPathWstr)) {
         result->Error("InvalidPath", "The Desktop folder path is invalid or inaccessible");
         CoTaskMemFree(folderPath);
         return;
