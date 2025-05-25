@@ -30,47 +30,20 @@ class DiskSpace_2Plugin : FlutterPlugin, MethodCallHandler {
   override fun onMethodCall(call: MethodCall, result: Result) {
     when (call.method) {
       "getFreeDiskSpace" -> {
-        executor.execute {
-          try {
-            val diskSpace = getFreeDiskSpace()
-            mainHandler.post {
-              result.success(diskSpace)
-            }
-          } catch (e: Exception) {
-            mainHandler.post {
-              result.error("DISK_SPACE_ERROR", "Failed to get free disk space: ${e.message}", null)
-            }
-          }
+        executeAsync(result, "Failed to get free disk space") {
+          getFreeDiskSpace()
         }
       }
       "getTotalDiskSpace" -> {
-        executor.execute {
-          try {
-            val diskSpace = getTotalDiskSpace()
-            mainHandler.post {
-              result.success(diskSpace)
-            }
-          } catch (e: Exception) {
-            mainHandler.post {
-              result.error("DISK_SPACE_ERROR", "Failed to get total disk space: ${e.message}", null)
-            }
-          }
+        executeAsync(result, "Failed to get total disk space") {
+          getTotalDiskSpace()
         }
       }
       "getFreeDiskSpaceForPath" -> {
         val path = call.argument<String>("path")
         if (path != null) {
-          executor.execute {
-            try {
-              val diskSpace = getFreeDiskSpaceForPath(path)
-              mainHandler.post {
-                result.success(diskSpace)
-              }
-            } catch (e: Exception) {
-              mainHandler.post {
-                result.error("DISK_SPACE_ERROR", "Failed to get free disk space for path: ${e.message}", null)
-              }
-            }
+          executeAsync(result, "Failed to get free disk space for path") {
+            getFreeDiskSpaceForPath(path)
           }
         } else {
           result.error("INVALID_ARGUMENT", "Path is required", null)
@@ -82,7 +55,23 @@ class DiskSpace_2Plugin : FlutterPlugin, MethodCallHandler {
   }
 
   override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+    executor.shutdown()
     channel.setMethodCallHandler(null)
+  }
+
+  private fun executeAsync(result: Result, errorMessage: String, operation: () -> Double) {
+    executor.execute {
+      try {
+        val value = operation()
+        mainHandler.post {
+          result.success(value)
+        }
+      } catch (e: Exception) {
+        mainHandler.post {
+          result.error("DISK_SPACE_ERROR", "$errorMessage: ${e.message}", null)
+        }
+      }
+    }
   }
 
   private fun getFreeDiskSpace(): Double {
