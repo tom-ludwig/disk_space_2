@@ -36,6 +36,7 @@ Pull requests are welcome. For major changes, please open an issue first to disc
     <tr>
       <td><a href="https://github.com/tom-ludwig"><img src="https://avatars.githubusercontent.com/tom-ludwig?v=4?s=100" width="100px" alt="Tom Ludwig" style="border-radius: 15%;"><br /><sub><b>Tom Ludwig</b></sub></a><br/></td>
       <td><a href="https://github.com/pinterlajos"><img src="https://avatars.githubusercontent.com/pinterlajos?v=4?s=100" width="100px" alt="lala" style="border-radius: 15%;"><br /><sub><b>lala</b></sub></a><br/></td>
+      <td><a href="https://github.com/ductranit"><img src="https://avatars.githubusercontent.com/ductranit?v=4?s=100" width="100px" alt="ductranit" style="border-radius: 15%;"><br /><sub><b>ductranit</b></sub></a><br/></td>
     </tr>
   </tbody>
 </table>
