@@ -1,3 +1,7 @@
+## 1.0.12
+
+- Add support for Swift Package Manager (SPM).
+
 ## 1.0.11
 
 - Fix linux support by improving cmakelist
