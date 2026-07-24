@@ -1,3 +1,11 @@
+## 1.0.13
+
+- Migrate Android to AGP 9's built-in Kotlin support; remove the explicit
+  `org.jetbrains.kotlin.android` (KGP) plugin to fix the double-registration
+  conflict on the latest Android build tools.
+- Bump Android Gradle Plugin to 9.3.0 and Gradle to 9.5.0.
+- Raise Java/Kotlin JVM target from 8 to 11.
+
 ## 1.0.12
 
 - Add support for Swift Package Manager (SPM).
